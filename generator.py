@@ -10,12 +10,12 @@ class PasswordGenerator():
             'special': '!@#$%^&*()_+-=[]{}|;:,.<>?'
         }
         
-    def generate(self, length=12, use_uppercase=True, use_degits=True, use_special=True):
+    def generate(self, length=12, use_uppercase=True, use_digits=True, use_special=True):
         chars = self.chars_sets['lowercase']
         
         if use_uppercase:
             chars += self.chars_sets['uppercase']
-        if use_degits:
+        if use_digits:
             chars += self.chars_sets['digits']
         if use_special:
             chars += self.chars_sets['special']
@@ -25,7 +25,7 @@ class PasswordGenerator():
         
         if use_uppercase:
             password.append(random.choice(self.chars_sets['uppercase']))
-        if use_degits:
+        if use_digits:
             password.append(random.choice(self.chars_sets['digits']))
         if use_special:
             password.append(random.choice(self.chars_sets['special']))   
