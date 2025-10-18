@@ -78,7 +78,7 @@ def test_store_and_verify_password(): #Тест проверки и сохран
             print("Неправильный пароль принят")
             
         wrong_master = "WrongMaster"
-        if not storage.verify_password(service, password, wrong_password):
+        if not storage.verify_password(service, password, wrong_master):
             print("Неправильный мастер пароль отклонен")
         else:
             print("Неправильный мастер пароль принят")
@@ -113,12 +113,166 @@ def test_multiple_services(): #Тест работы с несколькими �
         else:
             print("Поиск по части имени не работает")
             
-        results = storage.find_service("DSTU.ru")
+        results = storage.find_service("DSTU.ru") # Поиск несуществующего сервиса
         if not results:
             print("Поиск несуществующего сервиса возвращает пустой результат")
         else:
             print("Поиск несуществующего сервиса возвращает данные")
             
-    except Ellipsis as e:
+    except Exception as e:
         print(f"Ошибка при работе с несколькими сервисами: {e}")
         
+def test_wrong_master_password(): #Тест неправильного мастер-пароля
+    print("Тест неправильного мастер-пароля")
+    
+    storage = PasswordStorage('test_passwords.json')
+    
+    try:
+        storage.store_password("test", "user", "pass", "wrong_master") #1 сохранение устанавливает мастер-пароль
+        
+        #Попытка сохранить с неправильным мастер-паролем        
+        try:
+            storage.store_password("test2", "user2", "pass2", "wrong_master")
+            print("Неправильный мастер-пароль был принят")
+        except ValueError as e:
+            print(f"Неправильный мастер-пароль был отколнен: {e}")
+            
+    except Exception as e:
+        print(f"Ошибка в тесте мастер-пароля: {e}")
+        
+        
+def test_file_persistence(): #тест сохранения в файл
+    print("тест сохранения в файл")
+    
+    filename = 'test_persistence.json'
+    
+    storage_1 = PasswordStorage(filename) #Создаем 1 хранилище и сохраняем туда данные
+    storage_1.store_password("persistent", "user", "password", "master")
+    
+    storage_2 = PasswordStorage(filename) #Создаем 2 хранилищеБ должны загрузиться данные из файла
+    
+    if storage_2.verify_password("persistent", "password", "master"): #Проверяем что данные сохранились
+        print("Данные успешно сохранились в файл и загрузились")
+    else:
+        print("Данные не сохранились в файл")
+        
+        
+def test_data_structure(): #Тест структуры данных в файл
+    print("Тест структуры данных в файл")
+    
+    filename = 'test_passwords.json'
+    storage = PasswordStorage(filename)
+    
+    storage.store_password("test_service", "test_user", "test_pass", "master_pass")
+    
+    try:
+        with open(filename, 'r') as f:
+            data = json.load(f)
+            
+        print("Структура данных в файле:")
+        print(f"Есть master_hash: {'master_hash' in data}")
+        print(f"Есть passwords: {'passwords' in data}")
+        
+        if 'passwords' in data and 'test_service' in data['passwords']:
+            service_data = data['passwords']['test_service']
+            print(f"Данные сервиса: username={service_data.get('username')}")
+            print(f"Пароль захеширован: {len(service_data.get('password_hash', '')) == 64}")
+            print("Структура данных корректна")
+        else:
+            print("Структура данных некорректна")
+            
+    except Exception as e:
+        print(f"Ошибка при чтении файла: {e}")
+        
+        
+def interactive_test():
+    print("Интерактивный тест")
+    
+    storage = PasswordStorage('passwords.json')
+    
+    while True:
+        print("\nВыберите действие:")
+        print("1 - Сохранить пароль")
+        print("2 - Найти сервис") 
+        print("3 - Проверить пароль")
+        print("0 - Выход")
+        
+        choice = input("Ваш выбор: ").strip()
+        
+        if choice == "1":
+            service = input("Сервис: ")
+            username = input("Имя пользователя: ")
+            password = input("Пароль: ")
+            master_password = input("Мастер-пароль: ")
+            
+            try:
+                storage.store_password(service, username, password, master_password)
+                print("Пароль сохранен!")
+            except Exception as e:
+                print(f"Ошибка: {e}")
+                
+                
+        elif choice == "2":
+            service_name = input("Название сервиса для поиска: ")
+            result = storage.find_service(service_name)
+            
+            if result:
+                print("найдены сервисы:")
+                for service, data in result.items():
+                    print(f"{service}: {data['username']}")
+            else:
+                print("Сервисы не найдены")
+                    
+                    
+        elif choice == "3":
+            service = input("Сервис: ")
+            password = input("Пароль для проверки: ")
+            master_password = input("Мастер-пароль ")
+            
+            
+            if storage.verify_password(service, password, master_password):
+                print("Пароль верный!")
+            else:
+                print("Пароль неверный!")
+            
+            
+        elif choice == "0":
+            break
+        else:
+            print("Неверный выбор")
+            
+            
+def run_all_tests(): #Запуск всех тестов
+    print("Запуск всех тестов storage.py")
+    
+    cleanup_storage_files()
+    test_storage_inicialization()
+    
+    cleanup_storage_files()
+    test_password_hash()
+    
+    cleanup_storage_files()
+    test_store_and_verify_password()
+    
+    cleanup_storage_files()
+    test_multiple_services()
+    
+    cleanup_storage_files()
+    test_wrong_master_password()
+    
+    cleanup_storage_files()
+    test_file_persistence()
+    
+    cleanup_storage_files()
+    test_data_structure()
+    
+    print("Все тысты завершены")
+    
+    
+if __name__== "__main__":
+    import sys     
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "interactive":
+        interactive_test()
+    else:
+        run_all_tests()

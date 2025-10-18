@@ -6,9 +6,9 @@ from getpass import getpass
 class PasswordStorage():
     def __init__(self, storage_file='passwords.json'):
         self.storage_file = storage_file
-        self.data = self._load.data()
+        self.data = self._load_data()
         
-    def load_data(self):
+    def _load_data(self):
         if os.path.exists(self.storage_file):
             with open(self.storage_file, 'r') as f:
                 return json.load(f)
@@ -31,10 +31,10 @@ class PasswordStorage():
         
         password_hash = self._hash_password(password) #Хешируем и сохраняем пароль
         
-        if 'password' not in self.data:
-            self.data['password'] = {}
+        if 'passwords' not in self.data:
+            self.data['passwords'] = {}
             
-        self.data['password'][service] = {
+        self.data['passwords'][service] = {
             'username': username,
             'password_hash': password_hash
         }
@@ -47,9 +47,9 @@ class PasswordStorage():
         if self.data.get('master_hash') != master_hash:
             return False
         
-        stored_hash = self.data['password'].get(service, {}).get('password_hash')
+        stored_hash = self.data['passwords'].get(service, {}).get('password_hash')
         return stored_hash == self._hash_password(password)
     
     def find_service(self, service_name):
-        return {k: v for k, v in self.data.get('password', {}).items()
+        return {k: v for k, v in self.data.get('passwords', {}).items()
                 if service_name.lower() in k.lower()}
