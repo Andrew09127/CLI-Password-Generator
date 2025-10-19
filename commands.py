@@ -1,6 +1,6 @@
-from .generator import PasswordGenerator
-from .storage import PasswordStorage
-from .utils import print_password_information, valid_len
+from generator import PasswordGenerator
+from storage import PasswordStorage
+from utils import print_password_information
 from getpass import getpass
 
 class PasswordCommands:
@@ -24,8 +24,13 @@ class PasswordCommands:
             username = input("Введите имя пользователя: ")
             master_password = getpass("Введите мастер-пароль: ")
             
-            self.storage.store_password(service, username, password, master_password)
-            print(f"Пароль для {service} сохранен!")
+            try:
+                self.storage.store_password(service, username, password, master_password)
+                print(f"Пароль для {service} сохранен!")
+            except ValueError as e:
+                print(f"Ошибка сохранения: {e}")
+            except Exception as e:
+                print(f"Неожиданная ошибка: {e}")
             
     def find_command(self, args):
         service_name = args.service
@@ -46,7 +51,10 @@ class PasswordCommands:
         master_password = getpass("Введите мастер-пароль: ")
         
         
-        if self.storage.verify_password(service, password, master_password):
-            print("Пароль верный!")
-        else:
-            print("Пароль неверный!")
+        try:
+            if self.storage.verify_password(service, password, master_password):
+                print("Пароль верный!")
+            else:
+                print("Пароль неверный!")
+        except Exception as e:
+            print(f"Ошибка проверки: {e}")
