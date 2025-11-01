@@ -1,9 +1,23 @@
+"""Основной модуль CLI Password Generator.
+
+Этот модуль предоставляет интерфейс командной строки для генерации паролей,
+их сохранения и управления через различные команды.
+"""
+
 import argparse
 from commands import PasswordCommands
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Генератор безопасных паролей')
+    """Точка входа в приложение.
+    
+    Обрабатывает аргументы командной строки и выполняет соответствующие команды.
+    
+    Raises:
+        SystemExit: При завершении работы приложения.
+    """
+    
+    parser = argparse.ArgumentParser(description='CLI Password Generator - генератор и менеджер паролей')
     subparsers = parser.add_subparsers(dest='command', help='Доступные команды')
     
     #Команда генерации
