@@ -19,8 +19,8 @@ class PasswordCommands:
         print_password_information(password)
         
         
-        if args.save:
-            service = input("Введите название сервиса: ")
+        if args.save:        
+            service = input("Введите название сервиса: ")            
             username = input("Введите имя пользователя: ")
             master_password = getpass("Введите мастер-пароль: ")
             
