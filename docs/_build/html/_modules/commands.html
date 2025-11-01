@@ -1,0 +1,207 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="ru" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>commands &mdash; документация CLI PASSWORD GENERATOR 1.0.0</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e35015f7"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/translations.js?v=cd1d70c9"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Алфавитный указатель" href="../genindex.html" />
+    <link rel="search" title="Поиск" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CLI PASSWORD GENERATOR
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Поиск в документации" aria-label="Поиск в документации" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Меню навигации">
+              <p class="caption" role="heading"><span class="caption-text">Содержание:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Модули проекта</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Меню навигации для мобильных устройств" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CLI PASSWORD GENERATOR</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Навигация по страницам">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Код модуля</a></li>
+      <li class="breadcrumb-item active">commands</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Исходный код commands</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Модуль команд CLI.</span>
+
+<span class="sd">Содержит класс PasswordCommands с методами для обработки команд пользователя.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">PasswordGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">storage</span><span class="w"> </span><span class="kn">import</span> <span class="n">PasswordStorage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_password_information</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">getpass</span><span class="w"> </span><span class="kn">import</span> <span class="n">getpass</span>
+
+<div class="viewcode-block" id="PasswordCommands">
+<a class="viewcode-back" href="../commands.html#commands.PasswordCommands">[документация]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PasswordCommands</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Класс для обработки команд управления паролями.</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        generator (PasswordGenerator): Генератор паролей.</span>
+<span class="sd">        storage (PasswordStorage): Хранилище паролей.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="PasswordCommands.__init__">
+<a class="viewcode-back" href="../commands.html#commands.PasswordCommands.__init__">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Инициализирует генератор и хранилище паролей.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generator</span> <span class="o">=</span> <span class="n">PasswordGenerator</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">storage</span> <span class="o">=</span> <span class="n">PasswordStorage</span><span class="p">()</span></div>
+
+        
+<div class="viewcode-block" id="PasswordCommands.generate_command">
+<a class="viewcode-back" href="../commands.html#commands.PasswordCommands.generate_command">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Обрабатывает команду генерации пароля.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            args: Аргументы командной строки с параметрами генерации.</span>
+<span class="sd">            </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: При ошибках валидации параметров.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">password</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generator</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+            <span class="n">length</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">length</span><span class="p">,</span>
+            <span class="n">use_uppercase</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">uppercase</span><span class="p">,</span>
+            <span class="n">use_digits</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">digits</span><span class="p">,</span>
+            <span class="n">use_special</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">special</span>
+        <span class="p">)</span>
+        
+        <span class="n">print_password_information</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
+        
+        
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">save</span><span class="p">:</span>        
+            <span class="n">service</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Введите название сервиса: &quot;</span><span class="p">)</span>            
+            <span class="n">username</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Введите имя пользователя: &quot;</span><span class="p">)</span>
+            <span class="n">master_password</span> <span class="o">=</span> <span class="n">getpass</span><span class="p">(</span><span class="s2">&quot;Введите мастер-пароль: &quot;</span><span class="p">)</span>
+            
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">store_password</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">master_password</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Пароль для </span><span class="si">{</span><span class="n">service</span><span class="si">}</span><span class="s2"> сохранен!&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ошибка сохранения: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Неожиданная ошибка: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+            
+<div class="viewcode-block" id="PasswordCommands.find_command">
+<a class="viewcode-back" href="../commands.html#commands.PasswordCommands.find_command">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Обрабатывает команду поиска пароля по сервису.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            args: Аргументы командной строки с названием сервиса.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">service_name</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">service</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">find_service</span><span class="p">(</span><span class="n">service_name</span><span class="p">)</span>
+        
+        
+        <span class="k">if</span> <span class="n">results</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Найдено </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2"> сервисов:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">service</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">service</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Сервисы не найдены&quot;</span><span class="p">)</span></div>
+
+            
+        
+<div class="viewcode-block" id="PasswordCommands.verify_command">
+<a class="viewcode-back" href="../commands.html#commands.PasswordCommands.verify_command">[документация]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">verify_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Обрабатывает команду проверки существования пароля.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            args: Аргументы командной строки с названием сервиса.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">service</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">service</span>
+        <span class="n">password</span> <span class="o">=</span> <span class="n">getpass</span><span class="p">(</span><span class="s2">&quot;Введите пароль для проверки: &quot;</span><span class="p">)</span>
+        <span class="n">master_password</span> <span class="o">=</span> <span class="n">getpass</span><span class="p">(</span><span class="s2">&quot;Введите мастер-пароль: &quot;</span><span class="p">)</span>
+        
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">verify_password</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">master_password</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Пароль верный!&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Пароль неверный!&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ошибка проверки: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Авторские права 2025, Andrew09127. </p>
+  </div>
+
+  Собрано при помощи <a href="https://www.sphinx-doc.org/">Sphinx</a> с использованием
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">темы,</a>
+    предоставленной <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
