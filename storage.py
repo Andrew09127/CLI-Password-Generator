@@ -67,6 +67,9 @@ class PasswordStorage():
         elif self.data['master_hash'] != master_hash:
             raise ValueError("Неверный мастер-пароль")
         
+        if 'passwords' in self.data and service in self.data['passwords']:
+            raise ValueError(f"Сервис '{service}' уже существует")
+        
         password_hash = self._hash_password(password) #Хешируем и сохраняем пароль
         
         if 'passwords' not in self.data:

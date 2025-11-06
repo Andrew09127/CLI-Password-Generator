@@ -152,6 +152,26 @@ python main.py verify gmail
 # Вводим: master_password = "secret123"  
 ```
 
+## 🧪 Тестирование
+
+### Автотесты
+
+Проект включает комплексные автотесты, покрывающие все основные модули:
+
+```bash
+# Запуск всех тестов
+python -m unittest discover
+
+# Запуск с подробным выводом
+python -m unittest discover -v
+
+# Запуск конкретного модуля
+python -m unittest test_commands.py
+python -m unittest test_generator.py
+python -m unittest test_storage.py
+python -m unittest test_utils.py
+```
+
 ## 🔒 Безопасность
 - Пароли хэшируются (SHA-256)
   
