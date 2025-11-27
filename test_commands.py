@@ -247,88 +247,77 @@ class TestPasswordCommands(unittest.TestCase):
         output = mock_stdout.getvalue()
         self.assertIn("github", output.lower(), 
                      "Поиск должен работать без учета регистра")
-
-
-def test_password_strength_display():
-    """Тестирует отображение информации о сложности пароля."""
-    commands = PasswordCommands()
     
-    args = MagicMock()
-    args.length = 16
-    args.uppercase = True
-    args.digits = True
-    args.special = True
-    args.save = False
-    
-    with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
-        commands.generate_command(args)
-        output = mock_stdout.getvalue()
+    def test_password_strength_display(self):
+        """Тестирует отображение информации о сложности пароля."""
+        args = MagicMock()
+        args.length = 16
+        args.uppercase = True
+        args.digits = True
+        args.special = True
+        args.save = False
         
-        assert "Сила пароля:" in output, "Должна отображаться оценка сложности"
-        assert "Длина пароля:" in output, "Должна отображаться длина пароля"
-
-
-def test_multiple_operations():
-    """Тестирует выполнение нескольких операций подряд."""
-    commands = PasswordCommands()
-    commands.storage = PasswordStorage('test_multiple_operations.json')
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            self.commands.generate_command(args)
+            output = mock_stdout.getvalue()
+            
+            self.assertIn("Сила пароля:", output, "Должна отображаться оценка сложности")
+            self.assertIn("Длина пароля:", output, "Должна отображаться длина пароля")
     
-    master_password = "testmaster123"
-    
-    # Сохраняем несколько паролей
-    commands.storage.store_password("service_1", "user1", "pass1", master_password)
-    commands.storage.store_password("service_2", "user2", "pass2", master_password)
-    commands.storage.store_password("service_3", "user3", "pass3", master_password)
-    
-    # Ищем сервисы
-    args = MagicMock()
-    args.service = "service"
-    
-    with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
-        commands.find_command(args)
-        output = mock_stdout.getvalue()
+    def test_multiple_operations(self):
+        """Тестирует выполнение нескольких операций подряд."""
+        self.commands.storage = PasswordStorage('test_multiple_operations.json')
+        master_password = "testmaster123"
         
-        assert "service_1" in output.lower(), "Должен находиться service_1"
-        assert "service_2" in output.lower(), "Должен находиться service_2"
-        assert "service_3" in output.lower(), "Должен находиться service_3"
+        # Сохраняем несколько паролей
+        self.commands.storage.store_password("service_1", "user1", "pass1", master_password)
+        self.commands.storage.store_password("service_2", "user2", "pass2", master_password)
+        self.commands.storage.store_password("service_3", "user3", "pass3", master_password)
+        
+        # Ищем сервисы
+        args = MagicMock()
+        args.service = "service"
+        
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            self.commands.find_command(args)
+            output = mock_stdout.getvalue()
+            
+            self.assertIn("service_1", output.lower(), "Должен находиться service_1")
+            self.assertIn("service_2", output.lower(), "Должен находиться service_2")
+            self.assertIn("service_3", output.lower(), "Должен находиться service_3")
     
-    # Очистка
-    if os.path.exists('test_multiple_operations.json'):
-        os.remove('test_multiple_operations.json')
-
-
-def run_all_commands_tests():
-    """Запускает все тесты для модуля commands.
+    def test_generate_min_length(self):
+        """Тестирует генерацию пароля минимальной длины."""
+        args = MagicMock()
+        args.length = 8
+        args.uppercase = True
+        args.digits = True
+        args.special = True
+        args.save = False
+        
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            self.commands.generate_command(args)
+            output = mock_stdout.getvalue()
+            
+            self.assertIn("Длина пароля: 8", output, 
+                         "В выводе должна отображаться минимальная длина пароля")
     
-    Выполняет как unittest тесты, так и дополнительные функциональные тесты.
-    """
-    print("ЗАПУСК ВСЕХ ТЕСТОВ COMMANDS.PY")
-    
-    # Запускаем unittest тесты
-    loader = unittest.TestLoader()
-    suite = loader.loadTestsFromTestCase(TestPasswordCommands)
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(suite)
-    
-    # Запускаем дополнительные тесты
-    test_password_strength_display()
-    test_multiple_operations()
-    
-    print("ВСЕ ТЕСТЫ COMMANDS.PY ЗАВЕРШЕНЫ")
+    def test_generate_max_length(self):
+        """Тестирует генерацию пароля максимальной длины."""
+        args = MagicMock()
+        args.length = 50
+        args.uppercase = True
+        args.digits = True
+        args.special = True
+        args.save = False
+        
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            self.commands.generate_command(args)
+            output = mock_stdout.getvalue()
+            
+            self.assertIn("Длина пароля: 50", output, 
+                         "В выводе должна отображаться максимальная длина пароля")
 
 
 if __name__ == "__main__":
-    """Точка входа для запуска тестов.
-    
-    Поддерживает различные режимы запуска через аргументы командной строки.
-    """
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "unit":
-            run_all_commands_tests()
-        else:
-            print("Использование:")
-            print("python test_commands.py              # Все тесты")
-            print("python test_commands.py unit         # Только unit-тесты")
-    else:
-        # По умолчанию запускаем все тесты
-        run_all_commands_tests()
+    unittest.main()

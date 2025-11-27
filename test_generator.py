@@ -151,90 +151,30 @@ class TestPasswordGenerator(unittest.TestCase):
                                     f"Набор символов '{char_set}' должен быть строкой")
                 self.assertGreater(len(self.generator.chars_sets[char_set]), 0,
                                  f"Набор символов '{char_set}' не должен быть пустым")
-
-
-def run_comprehensive_generator_test():
-    """Запускает комплексное тестирование генератора паролей.
     
-    Выполняет дополнительные проверки, не входящие в стандартные unit-тесты.
-    """
-    print("КОМПЛЕКСНОЕ ТЕСТИРОВАНИЕ ГЕНЕРАТОРА ПАРОЛЕЙ")
+    def test_generate_min_length(self):
+        """Тестирует генерацию пароля минимальной длины."""
+        password = self.generator.generate(length=8)
+        self.assertEqual(len(password), 8,
+                        "Пароль минимальной длины должен иметь 8 символов")
     
-    generator = PasswordGenerator()
+    def test_generate_max_length(self):
+        """Тестирует генерацию пароля максимальной длины."""
+        password = self.generator.generate(length=50)
+        self.assertEqual(len(password), 50,
+                        "Пароль максимальной длины должен иметь 50 символов")
     
-    test_cases = [
-        {
-            'name': 'Пароль по умолчанию',
-            'params': {'length': 12, 'use_uppercase': True, 'use_digits': True, 'use_special': True}
-        },
-        {
-            'name': 'Короткий пароль',
-            'params': {'length': 8, 'use_uppercase': True, 'use_digits': True, 'use_special': True}
-        },
-        {
-            'name': 'Длинный сложный пароль',
-            'params': {'length': 20, 'use_uppercase': True, 'use_digits': True, 'use_special': True}
-        },
-        {
-            'name': 'Только строчные буквы',
-            'params': {'length': 10, 'use_uppercase': False, 'use_digits': False, 'use_special': False}
-        }
-    ]
-    
-    for i, test_case in enumerate(test_cases, 1):
-        print(f"\n{i}. {test_case['name']}:")
-        password = generator.generate(**test_case['params'])
-        
-        print(f"   Пароль: {password}")
-        print(f"   Длина: {len(password)}")
-        print(f"   Заглавные: {any(c.isupper() for c in password)}")
-        print(f"   Цифры: {any(c.isdigit() for c in password)}")
-        print(f"   Спецсимволы: {any(not c.isalnum() for c in password)}")
-    
-    print("\nТЕСТИРОВАНИЕ ЗАВЕРШЕНО")
-
-
-def run_all_generator_tests():
-    """Запускает все тесты для модуля generator.
-    
-    Выполняет как unittest тесты, так и дополнительные функциональные тесты.
-    """
-    print("ЗАПУСК ВСЕХ ТЕСТОВ GENERATOR.PY")
-    
-    # Запускаем unittest тесты
-    loader = unittest.TestLoader()
-    suite = loader.loadTestsFromTestCase(TestPasswordGenerator)
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(suite)
-    
-    # Запускаем дополнительные тесты
-    run_comprehensive_generator_test()
-    
-    print("ВСЕ ТЕСТЫ GENERATOR.PY ЗАВЕРШЕНЫ")
+    def test_generate_edge_cases(self):
+        """Тестирует генерацию паролей с граничными значениями параметров."""
+        # Только заглавные буквы
+        password = self.generator.generate(use_uppercase=True, use_digits=False, use_special=False)
+        self.assertTrue(any(c.isupper() for c in password),
+                       "Пароль должен содержать заглавные буквы")
+        self.assertFalse(any(c.isdigit() for c in password),
+                        "Пароль не должен содержать цифры")
+        self.assertFalse(any(not c.isalnum() for c in password),
+                        "Пароль не должен содержать специальные символы")
 
 
 if __name__ == "__main__":
-    """Точка входа для запуска тестов.
-    
-    Поддерживает различные режимы запуска через аргументы командной строки.
-    """
-    import sys
-    
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "unit":
-            # Запуск только unit-тестов
-            loader = unittest.TestLoader()
-            suite = loader.loadTestsFromTestCase(TestPasswordGenerator)
-            runner = unittest.TextTestRunner(verbosity=2)
-            runner.run(suite)
-        elif sys.argv[1] == "comprehensive":
-            # Запуск только комплексного тестирования
-            run_comprehensive_generator_test()
-        else:
-            print("Использование:")
-            print("python test_generator.py              # Все тесты")
-            print("python test_generator.py unit         # Только unit-тесты")
-            print("python test_generator.py comprehensive # Только комплексное тестирование")
-    else:
-        # По умолчанию запускаем все тесты
-        run_all_generator_tests()
+    unittest.main()

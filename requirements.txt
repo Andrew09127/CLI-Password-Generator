@@ -1,3 +1,12 @@
 # Документация проекта
 sphinx>=6.0
 sphinx-rtd-theme>=1.0
+
+# База данных PostgreSQL
+psycopg2-binary>=2.9.0
+
+# Переменные окружения (для конфигурации)
+python-dotenv>=1.0.0
+
+# Тестирование 
+pytest>=7.0
