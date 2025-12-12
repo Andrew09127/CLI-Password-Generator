@@ -1,217 +1,261 @@
-"""Модуль работы с PostgreSQL хранилищем паролей."""
+"""
+Простая реализация хранилища паролей на PostgreSQL с использованием psycopg2.
 
+Модуль предоставляет класс PostgresStorage для работы с базой данных PostgreSQL,
+который заменяет CSV-операции
+"""
+
+import os
 import psycopg2
-import hashlib
-from typing import Dict, List
+from psycopg2.extras import RealDictCursor, Json
+from contextlib import contextmanager
+from dotenv import load_dotenv
+from typing import Optional, List, Dict, Any
+
+# Загружаем переменные окружения из файла .env
+load_dotenv(encoding='utf-8')
+
+# Параметры подключения к PostgreSQL
+PG_HOST = os.environ.get("PG_HOST", "localhost")
+PG_PORT = os.environ.get("PG_PORT", "5433")
+PG_DB = os.environ.get("PG_DB", "PasswordDB")
+PG_USER = os.environ.get("PG_USER", "PasswordDB")
+PG_PASSWORD = os.environ.get("PG_PASSWORD", "mypassword123")
+
+print(f"DEBUG - Подключение: {PG_USER}@{PG_HOST}:{PG_PORT}/{PG_DB}")
 
 
-class PostgresPasswordStorage:
-    """Класс для безопасного хранения паролей в PostgreSQL."""
+def get_conn() -> psycopg2.extensions.connection:
+    """
+    Создает и возвращает соединение с базой данных PostgreSQL.
     
-    def __init__(self, connection_string: str, master_password: str):
-        """Инициализирует PostgreSQL хранилище.
+    Returns:
+        psycopg2.extensions.connection: Объект соединения с базой данных
         
-        Args:
-            connection_string (str): Строка подключения к PostgreSQL.
-            master_password (str): Мастер-пароль для доступа к хранилищу.
+    Raises:
+        psycopg2.OperationalError: Если не удалось подключиться к базе данных
+    """
+    return psycopg2.connect(
+        host=PG_HOST,
+        port=PG_PORT,
+        database=PG_DB,
+        user=PG_USER,
+        password=PG_PASSWORD
+    )
+
+
+@contextmanager
+def conn_cursor():
+    """
+    Контекстный менеджер для работы с соединением и курсором.
+    
+    Обеспечивает:
+    - Автоматическое создание и закрытие соединения
+    - Автоматический коммит при успешном выполнении
+    - Откат изменений при возникновении исключения
+    - Использование RealDictCursor для возврата результатов в виде словарей
+    
+    Yields:
+        tuple: Кортеж (connection, cursor) для работы с базой данных
+    """
+    conn = get_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            yield conn, cur
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def init_db() -> None:
+    """
+    Создает таблицу 'passwords' в базе данных, если она не существует.
+    
+    Таблица содержит следующие поля:
+    - id: SERIAL PRIMARY KEY - уникальный идентификатор записи
+    - name: TEXT - название/описание пароля
+    - password: TEXT NOT NULL - сам пароль
+    - length: INTEGER - длина пароля
+    - charset: TEXT - набор символов, использованный для генерации
+    - created_at: TIMESTAMP WITH TIME ZONE - дата и время создания (автоматически)
+    - meta: JSONB - дополнительные метаданные в формате JSON
+    
+    Raises:
+        psycopg2.Error: Если произошла ошибка при создании таблицы
+    """
+    create_query = """
+    CREATE TABLE IF NOT EXISTS passwords (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        password TEXT NOT NULL,
+        length INTEGER,
+        charset TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+        meta JSONB
+    );
+    """
+    try:
+        with conn_cursor() as (conn, cur):
+            cur.execute(create_query)
+        print("Таблица 'passwords' создана успешно!")
+    except Exception as e:
+        print(f"Ошибка создания таблицы: {e}")
+        raise
+
+
+class PostgresStorage:
+    """Класс для работы с хранилищем паролей в PostgreSQL."""
+    
+    def __init__(self) -> None:
         """
-        self.connection_string = connection_string
-        self.master_hash = self._hash_password(master_password)
-        self._init_database()
+        Инициализирует хранилище.
+        
+        При создании экземпляра автоматически создает таблицу 'passwords',
+        если она еще не существует в базе данных.
+        """
+        init_db()
     
-    def _get_connection(self):
-        """Создает подключение к PostgreSQL."""
-        try:
-            return psycopg2.connect(self.connection_string)
-        except psycopg2.OperationalError as e:
-            raise ConnectionError(f"Не удалось подключиться к PostgreSQL: {e}")
-    
-    def _init_database(self):
-        """Инициализирует структуру базы данных."""
-        conn = None
-        try:
-            conn = self._get_connection()
-            with conn.cursor() as cur:
-                # Создаем ОДНУ таблицу для всего
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS passwords (
-                        id SERIAL PRIMARY KEY,
-                        service VARCHAR(255) UNIQUE NOT NULL,
-                        username VARCHAR(255) NOT NULL,
-                        password_hash VARCHAR(64) NOT NULL,
-                        master_hash VARCHAR(64) NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                
-                # Проверяем мастер-пароль
-                cur.execute("SELECT COUNT(*) FROM passwords WHERE master_hash = %s", (self.master_hash,))
-                count = cur.fetchone()[0]
-                
-                if count == 0:
-                    # Первый запуск - создаем тестовую запись для проверки мастер-пароля
-                    cur.execute("""
-                        INSERT INTO passwords (service, username, password_hash, master_hash) 
-                        VALUES (%s, %s, %s, %s)
-                        ON CONFLICT (service) DO NOTHING
-                    """, ("_master_check", "system", "dummy", self.master_hash))
-                
-                conn.commit()
-        except Exception as e:
-            if conn:
-                conn.rollback()
-            raise e
-        finally:
-            if conn:
-                conn.close()
-    
-    def _hash_password(self, password: str) -> str:
-        """Хеширует пароль с использованием SHA-256.
+    def save_entry(self, entry: Dict[str, Any]) -> int:
+        """
+        Сохраняет запись о пароле в базу данных.
         
         Args:
-            password (str): Пароль для хеширования.
-        
+            entry: Словарь с данными пароля. Должен содержать:
+                - password (обязательно): строка с паролем
+                - name (опционально): название/описание
+                - length (опционально): длина пароля
+                - charset (опционально): набор символов
+                - meta (опционально): дополнительные метаданные в виде словаря
+                
         Returns:
-            str: Хеш пароля в шестнадцатеричном формате.
-        """
-        return hashlib.sha256(password.encode()).hexdigest()
-    
-    def store_password(self, service: str, username: str, password: str):
-        """Сохраняет пароль для указанного сервиса.
-        
-        Args:
-            service (str): Название сервиса.
-            username (str): Имя пользователя.
-            password (str): Пароль для сохранения.
-        
+            int: ID сохраненной записи
+            
         Raises:
-            ValueError: Если сервис уже существует.
+            KeyError: Если отсутствует обязательное поле 'password'
+            psycopg2.Error: Если произошла ошибка при сохранении в БД
         """
-        conn = None
-        try:
-            conn = self._get_connection()
-            with conn.cursor() as cur:
-                # Проверяем существование сервиса
-                cur.execute("SELECT id FROM passwords WHERE service = %s AND service != '_master_check'", (service,))
-                if cur.fetchone():
-                    raise ValueError(f"Сервис '{service}' уже существует")
+        query = """
+        INSERT INTO passwords (name, password, length, charset, meta)
+        VALUES (%s, %s, %s, %s, %s)
+        RETURNING id;
+        """
+        
+        # Подготавливаем метаданные для сохранения в JSONB
+        meta = entry.get("meta")
+        if meta is not None and not isinstance(meta, (str, bytes)):
+            meta = Json(meta)
+        
+        with conn_cursor() as (conn, cur):
+            cur.execute(query, (
+                entry.get("name"),
+                entry["password"],
+                entry.get("length"),
+                entry.get("charset"),
+                meta
+            ))
+            row = cur.fetchone()
+            return row["id"]
+    
+    def get_all(self, limit: int = 1000) -> List[Dict[str, Any]]:
+        """
+        Возвращает все записи из базы данных.
+        
+        Args:
+            limit: Максимальное количество возвращаемых записей (по умолчанию 1000)
+            
+        Returns:
+            List[Dict[str, Any]]: Список словарей с записями, отсортированный
+            по дате создания в порядке убывания (новые записи первыми)
+        """
+        query = "SELECT * FROM passwords ORDER BY created_at DESC LIMIT %s;"
+        with conn_cursor() as (conn, cur):
+            cur.execute(query, (limit,))
+            return cur.fetchall()
+    
+    def get_by_id(self, id_: int) -> Optional[Dict[str, Any]]:
+        """
+        Возвращает запись по её ID.
+        
+        Args:
+            id_: Целочисленный идентификатор записи
+            
+        Returns:
+            Optional[Dict[str, Any]]: Словарь с данными записи или None,
+            если запись с указанным ID не найдена
+        """
+        query = "SELECT * FROM passwords WHERE id = %s;"
+        with conn_cursor() as (conn, cur):
+            cur.execute(query, (id_,))
+            return cur.fetchone()
+    
+    def delete(self, id_: int) -> int:
+        """
+        Удаляет запись по её ID.
+        
+        Args:
+            id_: Целочисленный идентификатор записи для удаления
+            
+        Returns:
+            int: Количество удаленных записей (0 или 1)
+        """
+        query = "DELETE FROM passwords WHERE id = %s;"
+        with conn_cursor() as (conn, cur):
+            cur.execute(query, (id_,))
+            return cur.rowcount
+    
+    def close(self) -> None:
+        """
+        Закрывает ресурсы хранилища.
+        
+        В текущей реализации метод является заглушкой для совместимости
+        с другими хранилищами. Реальное соединение закрывается автоматически
+        после каждого запроса.
+        """
+        pass
 
-                # Сохраняем пароль
-                password_hash = self._hash_password(password)
-                cur.execute(
-                    "INSERT INTO passwords (service, username, password_hash, master_hash) VALUES (%s, %s, %s, %s)",
-                    (service, username, password_hash, self.master_hash)
-                )
-                conn.commit()
-        except Exception as e:
-            if conn:
-                conn.rollback()
-            raise e
-        finally:
-            if conn:
-                conn.close()
+
+def get_storage() -> PostgresStorage:
+    """
+    Фабричная функция для создания экземпляра PostgresStorage.
     
-    def verify_password(self, service: str, password: str) -> bool:
-        """Проверяет правильность пароля для указанного сервиса.
-        
-        Args:
-            service (str): Название сервиса.
-            password (str): Пароль для проверки.
-        
-        Returns:
-            bool: True если пароль верный, False в противном случае.
-        """
-        conn = None
-        try:
-            conn = self._get_connection()
-            with conn.cursor() as cur:
-                # Сначала проверяем мастер-пароль
-                cur.execute("SELECT COUNT(*) FROM passwords WHERE master_hash = %s", (self.master_hash,))
-                if cur.fetchone()[0] == 0:
-                    return False
-                
-                # Проверяем пароль сервиса
-                cur.execute(
-                    "SELECT password_hash FROM passwords WHERE service = %s AND service != '_master_check'",
-                    (service,)
-                )
-                result = cur.fetchone()
-                if not result:
-                    return False
-                
-                stored_hash = result[0]
-                return stored_hash == self._hash_password(password)
-        except Exception as e:
-            return False
-        finally:
-            if conn:
-                conn.close()
+    Returns:
+        PostgresStorage: Новый экземпляр класса хранилища
+    """
+    return PostgresStorage()
+
+
+if __name__ == "__main__":
+    # Пример использования хранилища
+    storage = PostgresStorage()
     
-    def find_service(self, service_name: str) -> Dict[str, Dict]:
-        """Находит сервисы по частичному совпадению названия.
-        
-        Args:
-            service_name (str): Название сервиса или его часть для поиска.
-        
-        Returns:
-            Dict[str, Dict]: Словарь найденных сервисов.
-        """
-        conn = None
-        try:
-            conn = self._get_connection()
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT service, username FROM passwords WHERE service ILIKE %s AND service != '_master_check'",
-                    (f'%{service_name}%',)
-                )
-                results = cur.fetchall()
-                
-                return {
-                    service: {'username': username}
-                    for service, username in results
-                }
-        except Exception as e:
-            return {}
-        finally:
-            if conn:
-                conn.close()
+    # Сохранение тестовой записи
+    test_entry = {
+        "name": "Тестовый пароль",
+        "password": "test_password_123",
+        "length": 16,
+        "charset": "letters+digits+symbols",
+        "meta": {"category": "test", "strength": "high"}
+    }
     
-    def delete_password(self, service: str) -> bool:
-        """Удаляет пароль для указанного сервиса.
+    try:
+        entry_id = storage.save_entry(test_entry)
+        print(f"Сохранена запись с ID: {entry_id}")
         
-        Args:
-            service (str): Название сервиса.
+        # Получение всех записей
+        all_entries = storage.get_all()
+        print(f"Всего записей в базе: {len(all_entries)}")
         
-        Returns:
-            bool: True если пароль удален, False если не найден.
-        """
-        conn = None
-        try:
-            conn = self._get_connection()
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM passwords WHERE service = %s AND service != '_master_check'", (service,))
-                conn.commit()
-                return cur.rowcount > 0
-        except Exception as e:
-            return False
-        finally:
-            if conn:
-                conn.close()
-    
-    def get_all_services(self) -> List[str]:
-        """Возвращает список всех сервисов.
+        # Получение конкретной записи
+        entry = storage.get_by_id(entry_id)
+        if entry:
+            print(f"Получена запись: {entry['name']} - {entry['password']}")
+            
+        # Удаление записи
+        deleted = storage.delete(entry_id)
+        print(f"Удалено записей: {deleted}")
         
-        Returns:
-            List[str]: Список названий сервисов.
-        """
-        conn = None
-        try:
-            conn = self._get_connection()
-            with conn.cursor() as cur:
-                cur.execute("SELECT service FROM passwords WHERE service != '_master_check' ORDER BY service")
-                return [row[0] for row in cur.fetchall()]
-        except Exception as e:
-            return []
-        finally:
-            if conn:
-                conn.close()
+    except Exception as e:
+        print(f"Ошибка при работе с хранилищем: {e}")
